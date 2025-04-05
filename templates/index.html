@@ -1,94 +1,59 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Keyword Checker WebApp</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyword Checker</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-            padding-top: 50px;
-        }
-        .container {
-            max-width: 700px;
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        h2, h3 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        .btn-primary {
-            width: 100%;
-        }
-        .table-responsive {
-            margin-top: 20px;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .error { color: red; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
-<div class="container">
-    <h2>بررسی کلمات کلیدی در سایت</h2>
+    <h1>Keyword Checker</h1>
+    <form method="post" enctype="multipart/form-data">
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" required><br><br>
 
-    {% if error %}
-        <div class="alert alert-danger text-center">{{ error }}</div>
-    {% endif %}
+        <label for="website">Website URL:</label><br>
+        <input type="url" id="website" name="website" required><br><br>
 
-    <form method="POST" enctype="multipart/form-data">
-        <div class="mb-3">
-            <input type="email" name="email" class="form-control" placeholder="ایمیل شما" required>
-        </div>
-        <div class="mb-3">
-            <input type="text" name="website" class="form-control" placeholder="آدرس سایت (https://example.com)" required>
-        </div>
-        <div class="mb-3">
-            <input type="file" name="file" class="form-control" accept=".xlsx" required>
-        </div>
-        <button type="submit" class="btn btn-primary">بررسی کن</button>
+        <label for="file">Upload Keywords (Excel file):</label><br>
+        <input type="file" id="file" name="file" accept=".xlsx" required><br><br>
+
+        <button type="submit">Check Keywords</button>
     </form>
 
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
     {% if results %}
-        <h3 class="mt-5">نتایج بررسی</h3>
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered">
-                <thead class="table-dark">
-                    <tr>
-                        <th>کلمه کلیدی</th>
-                        <th>وضعیت</th>
-                        <th>لینک</th>
-                        <th>امتیاز</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in results %}
-                    <tr>
-                        <td>{{ row.keyword }}</td>
-                        <td>{{ '✅ یافت شد' if row.found else '❌ یافت نشد' }}</td>
-                        <td>
-                            {% if row.found %}
-                                <a href="{{ row.url }}" target="_blank">لینک صفحه</a>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>{{ row.score }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <h2>Results</h2>
+        <table>
+            <tr>
+                <th>Keyword</th>
+                <th>Found</th>
+                <th>URL</th>
+                <th>Score</th>
+                <th>Preview</th>
+            </tr>
+            {% for result in results %}
+                <tr>
+                    <td>{{ result.keyword }}</td>
+                    <td>{{ result.found }}</td>
+                    <td>{{ result.url }}</td>
+                    <td>{{ result.score }}</td>
+                    <td>{{ result.preview }}</td>
+                </tr>
+            {% endfor %}
+        </table>
         {% if download_filename %}
-            <div class="text-center">
-                <a href="{{ url_for('download', filename=download_filename) }}" class="btn btn-success">دانلود نتایج به صورت Excel</a>
-            </div>
+            <a href="/download/{{ download_filename }}">Download Results</a>
         {% endif %}
     {% endif %}
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
