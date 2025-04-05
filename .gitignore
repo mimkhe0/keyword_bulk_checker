@@ -1,0 +1,21 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+.env/
+
+# Instance files
+instance/*.xlsx
+instance/*.xls
+
+# IDE files (VSCode/PyCharm)
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+
+# Logs
+*.log
