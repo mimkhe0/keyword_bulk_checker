@@ -1,7 +1,9 @@
-flask
-requests
-beautifulsoup4
-lxml
-pandas
-validators
-openpyxl
+flask==2.3.3
+pandas==2.0.3
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+validators==0.22.0
+werkzeug==2.3.7
+openpyxl==3.1.2
+gunicorn==20.1.0
