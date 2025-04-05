@@ -25,21 +25,18 @@ app.config['INSTANCE_FOLDER'] = INSTANCE_FOLDER
 TIMEOUT_PER_URL = 5
 MAX_URLS = 20
 MAX_WORKERS = 10
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_FILE_SIZE = 10 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'.xlsx'}
 
-# Setup logging
 logging.basicConfig(
     filename=os.path.join(INSTANCE_FOLDER, 'app.log'),
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# Check allowed file extension
 def allowed_file(filename):
     return os.path.splitext(filename)[1].lower() in ALLOWED_EXTENSIONS
 
-# Cache URL text extraction
 @lru_cache(maxsize=100)
 def extract_text_from_urls(urls_tuple):
     urls = list(urls_tuple)
@@ -59,26 +56,21 @@ def extract_text_from_urls(urls_tuple):
             continue
     return ' '.join(texts)
 
-# Detect language
 def detect_language(word):
     if re.search(r'[\u0600-\u06FF]', word):
         return 'fa_ar'
     return 'en'
 
-# Generate dynamic stop words
 def get_dynamic_stop_words(text, lang, top_n=30):
     words = re.findall(r'\b\w{2,}\b', text)
     word_counts = Counter(words)
     most_common = word_counts.most_common(top_n)
-
     general_stop_words = {
         'en': {'the', 'and', 'in', 'of', 'for', 'with', 'to', 'from', 'by', 'is', 'are', 'on', 'at'},
         'fa_ar': {'از', 'و', 'به', 'در', 'با', 'که', 'برای', 'را', 'این', 'آن', 'یا', 'على', 'علىه', 'فی'}
     }
-
     return general_stop_words[lang].union({word for word, _ in most_common})
 
-# Get URLs from website with error handling
 def get_urls(website):
     urls = set()
     try:
@@ -98,7 +90,6 @@ def get_urls(website):
         urls.add(website.strip('/'))
     return list(urls)
 
-# Enhanced keyword checker with preview
 def check_keyword(keyword, urls, dynamic_stop_words):
     results = []
     important_words = [w for w in re.findall(r'\b\w+\b', keyword.lower()) if w not in dynamic_stop_words]
@@ -113,7 +104,6 @@ def check_keyword(keyword, urls, dynamic_stop_words):
                 content = res.text.lower()
                 if phrase in content:
                     found, best_url, score = True, url, content.count(phrase)
-                    # Get preview snippet
                     index = content.index(phrase)
                     start = max(0, index - 50)
                     end = min(len(content), index + len(phrase) + 50)
@@ -124,14 +114,12 @@ def check_keyword(keyword, urls, dynamic_stop_words):
         results.append({"keyword": phrase, "found": found, "url": best_url, "score": score, "preview": preview})
     return results
 
-# Save user data with error handling
 def save_user_data(email, website):
     users_db = os.path.join(INSTANCE_FOLDER, 'users.xlsx')
     try:
         if not os.path.exists(users_db):
             df_users = pd.DataFrame(columns=["Email", "Website", "Date"])
             df_users.to_excel(users_db, index=False)
-
         df_users = pd.read_excel(users_db)
         new_row = {"Email": email, "Website": website, "Date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         df_users = pd.concat([df_users, pd.DataFrame([new_row])], ignore_index=True)
@@ -150,7 +138,6 @@ def index():
             website_url = request.form.get('website', '').strip()
             file = request.files.get('file')
 
-            # Enhanced input validation
             if not all([email, website_url, file]) or not validators.email(email) or \
                not validators.url(website_url) or not allowed_file(file.filename):
                 error = 'Invalid input: Check email, URL, or file format (.xlsx only)'
@@ -197,23 +184,22 @@ def download(filename):
         if not os.path.exists(output_path):
             abort(404)
         response = send_file(output_path, as_attachment=True)
-        # Clean up after sending
         os.remove(output_path)
         return response
     except Exception as e:
         logging.error(f"Download error: {str(e)}")
         abort(500)
 
-# Cleanup old files
 def cleanup_old_files():
     now = datetime.now()
     for filename in os.listdir(INSTANCE_FOLDER):
         file_path = os.path.join(INSTANCE_FOLDER, filename)
         if os.path.isfile(file_path):
             file_time = datetime.fromtimestamp(os.path.getmtime(file_path))
-            if (now - file_time).days > 1:  # Remove files older than 1 day
+            if (now - file_time).days > 1:
                 os.remove(file_path)
 
 if __name__ == '__main__':
-    cleanup_old_files()  # Clean up on startup
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    cleanup_old_files()
+    port = int(os.environ.get('PORT', 5000))  # برای Render
+    app.run(debug=False, host='0.0.0.0', port=port)
