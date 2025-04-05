@@ -216,4 +216,9 @@ def cleanup_old_files():
 
 if __name__ == '__main__':
     cleanup_old_files()  # Clean up on startup
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    # قدیمی ممکنه این باشه:
+# app.run()
+
+# باید به این تغییر بدی:
+app.run(host="0.0.0.0", port=5000)
+
