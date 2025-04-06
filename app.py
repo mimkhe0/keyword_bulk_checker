@@ -42,10 +42,22 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RESULTS_FOLDER'] = RESULTS_FOLDER
 
-# Ensure directories exist
-os.makedirs(INSTANCE_FOLDER, exist_ok=True)
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(RESULTS_FOLDER, exist_ok=True)
+# Ensure directories exist and are writable
+try:
+    os.makedirs(INSTANCE_FOLDER, exist_ok=True)
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(RESULTS_FOLDER, exist_ok=True)
+    # Verify write permissions
+    if not os.access(INSTANCE_FOLDER, os.W_OK):
+        raise OSError(f"No write permission for directory: {INSTANCE_FOLDER}")
+    if not os.access(UPLOAD_FOLDER, os.W_OK):
+        raise OSError(f"No write permission for directory: {UPLOAD_FOLDER}")
+    if not os.access(RESULTS_FOLDER, os.W_OK):
+        raise OSError(f"No write permission for directory: {RESULTS_FOLDER}")
+    logging.info(f"Directories created successfully: {INSTANCE_FOLDER}, {UPLOAD_FOLDER}, {RESULTS_FOLDER}")
+except OSError as e:
+    logging.critical(f"Failed to create or access directories: {e}", exc_info=True)
+    raise
 
 logging.basicConfig(
     filename=LOG_FILE,
@@ -85,7 +97,7 @@ def init_db():
                 db.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        email TEXT NOT NULL,
+                        email  TEXT NOT NULL,
                         website TEXT NOT NULL,
                         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
@@ -449,6 +461,8 @@ def index():
                 try:
                     output_filename = f"results_{uuid.uuid4()}.xlsx"
                     output_path = os.path.join(app.config['RESULTS_FOLDER'], output_filename)
+                    # Log the path for debugging
+                    logging.info(f"Attempting to save Excel file to: {output_path}")
                     # Ensure the directory is writable
                     if not os.access(app.config['RESULTS_FOLDER'], os.W_OK):
                         raise OSError(f"No write permission for directory: {app.config['RESULTS_FOLDER']}")
