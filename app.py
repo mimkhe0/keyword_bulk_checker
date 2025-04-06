@@ -30,7 +30,7 @@ MAX_URLS_TO_FETCH = 30
 # MAX_URLS_FOR_TEXT_EXTRACTION = 10 # Unused currently, sample_text uses all texts
 MAX_WORKERS_FETCH = 15
 MAX_WORKERS_CHECK = 10
-MAX_FILE_SIZE = 10 * 1024 * 1024 # 10MB
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_EXTENSIONS = {'.xlsx'}
 CLEANUP_DAYS = 1
 
@@ -66,8 +66,8 @@ def get_db():
             )
             db.row_factory = sqlite3.Row
         except sqlite3.Error as e:
-             logging.critical(f"Failed to connect to database {app.config['DATABASE']}: {e}", exc_info=True)
-             abort(500, description="Database connection error.")
+            logging.critical(f"Failed to connect to database {app.config['DATABASE']}: {e}", exc_info=True)
+            abort(500, description="Database connection error.")
     return db
 
 @app.teardown_appcontext
@@ -135,8 +135,8 @@ def extract_text_from_url(url, session):
         logging.warning(f"Too many redirects for {url}")
         return url, None
     except requests.exceptions.HTTPError as e:
-         logging.warning(f"HTTP error fetching {url}: {e.response.status_code} {e.response.reason}")
-         return url, None
+        logging.warning(f"HTTP error fetching {url}: {e.response.status_code} {e.response.reason}")
+        return url, None
     except requests.exceptions.RequestException as e:
         logging.warning(f"Request failed for {url}: {type(e).__name__}")
         return url, None
@@ -146,7 +146,7 @@ def extract_text_from_url(url, session):
 
 def fetch_and_extract_texts_parallel(urls):
     url_texts = {}
-    headers = {'User-Agent': 'Mozilla/5.0 (compatible; KeywordCheckerBot/1.1; +http://example.com/bot)'} # TODO: Replace with actual bot info URL
+    headers = {'User-Agent': 'Mozilla/5.0 (compatible; KeywordCheckerBot/1.1; +http://example.com/bot)'}  # TODO: Replace with actual bot info URL
     with requests.Session() as session:
         session.headers.update(headers)
         with ThreadPoolExecutor(max_workers=MAX_WORKERS_FETCH, thread_name_prefix='fetch_url') as executor:
@@ -183,8 +183,8 @@ def get_internal_urls(base_url, session):
                 try:
                     full_url = urljoin(response.url, href).split('#')[0].rstrip('/')
                 except ValueError:
-                     logging.debug(f"Could not parse href '{href}' relative to {response.url}")
-                     continue
+                    logging.debug(f"Could not parse href '{href}' relative to {response.url}")
+                    continue
                 if full_url.startswith(normalized_base_url) and validators.url(full_url):
                     urls.add(full_url)
                     if len(urls) >= MAX_URLS_TO_FETCH:
@@ -235,7 +235,7 @@ def get_dynamic_stop_words(text, lang, top_n=50):
             'حتی', 'فقط', 'باید', 'نباید', 'باشد', 'نباشد', 'آیا', 'کدام', 'چه', 'چگونه', 'کجا', 'کی', 'چیست', 'واقع',
             'ضمن', 'بین', 'روی', 'زیر', 'بالای', 'کنار', 'مقابل', 'طبق', 'مانند', 'مثل', 'حدود', 'طی', 'طریق', 'نسبت',
             'علیه', 'علی', 'الا', 'فی', 'کل', 'غیر', 'ذلک', 'من', 'الی', 'عن', 'حتیٰ', 'اذا', 'لم', 'لن', 'کان', 'لیس', 'قد', 'ما', 'هو', 'هی',
-             'ها', 'تر', 'ترین', 'می', 'نمی', 'بی', 'پیش', 'پس',
+            'ها', 'تر', 'ترین', 'می', 'نمی', 'بی', 'پیش', 'پس',
             'میلادی', 'شمسی', 'هجری', 'سال', 'ماه', 'روز', 'شنبه', 'یکشنبه', 'دوشنبه', 'سهشنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'ساعت', 'دقیقه', 'ثانیه',
             'شرکت', 'سازمان', 'اداره', 'موسسه', 'دانشگاه', 'گروه', 'بخش', 'واحد', 'مرکز', 'انجمن', 'تیم', 'معاونت', 'مدیریت',
             'صفحه', 'اصلی', 'تماس', 'با', 'ما', 'درباره', 'محصولات', 'خدمات', 'اخبار', 'مقالات', 'پروفایل', 'کاربری', 'ورود', 'خروج', 'ثبت', 'نام',
@@ -300,28 +300,27 @@ def cleanup_old_files():
                             cleaned_count += 1
                             logging.info(f"Cleaned up old file: {file_path}")
                 except FileNotFoundError:
-                     logging.warning(f"File not found during cleanup check: {file_path}")
+                    logging.warning(f"File not found during cleanup check: {file_path}")
                 except OSError as e:
                     logging.error(f"Error removing file {file_path}: {e}")
                 except Exception as e:
-                     logging.error(f"Unexpected error processing file {file_path} during cleanup: {e}", exc_info=True)
+                    logging.error(f"Unexpected error processing file {file_path} during cleanup: {e}", exc_info=True)
         except Exception as e:
             logging.error(f"Error listing files during cleanup in {folder}: {e}", exc_info=True)
     if cleaned_count > 0:
         logging.info(f"Cleanup finished. Removed {cleaned_count} old files.")
     else:
-         logging.info("Cleanup finished. No old files found to remove.")
+        logging.info("Cleanup finished. No old files found to remove.")
 
 # --- Flask Routes ---
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    # Consistent indentation: 4 spaces per level
     start_time = time.time()
     results_data = []
     download_filename = None
     error_message = None
     email = request.form.get('email', '').strip()
-    website_url = request.form.get('website', '').strip() # Use this for rendering back
+    website_url = request.form.get('website', '').strip()  # Use this for rendering back
 
     if request.method == 'POST':
         file = request.files.get('file')
@@ -341,10 +340,10 @@ def index():
             if not validators.url(corrected_website_url):
                 validation_errors.append(f"آدرس وب‌سایت نامعتبر: {submitted_website_url}")
         elif not validators.url(corrected_website_url):
-             validation_errors.append(f"آدرس وب‌سایت نامعتبر: {submitted_website_url}")
+            validation_errors.append(f"آدرس وب‌سایت نامعتبر: {submitted_website_url}")
 
         if not file:
-             validation_errors.append("فایل اکسل کلمات کلیدی را انتخاب کنید.")
+            validation_errors.append("فایل اکسل کلمات کلیدی را انتخاب کنید.")
         elif not file.filename:
             validation_errors.append("فایل اکسل انتخاب نشده است.")
         elif not allowed_file(file.filename):
@@ -370,7 +369,7 @@ def index():
             try:
                 df = pd.read_excel(temp_path, engine='openpyxl')
                 if df.empty or df.shape[1] == 0:
-                     raise ValueError("فایل اکسل خالی است یا ستون اول ندارد.")
+                    raise ValueError("فایل اکسل خالی است یا ستون اول ندارد.")
                 keywords = df.iloc[:, 0].dropna().astype(str).str.strip().unique().tolist()
                 keywords = [kw for kw in keywords if kw]
                 if not keywords:
@@ -387,7 +386,7 @@ def index():
             if urls_to_check is None:
                 raise ConnectionError(f"امکان دسترسی به وب‌سایت اصلی ({process_url}) یا دریافت لینک‌ها وجود ندارد.")
             if not urls_to_check:
-                 logging.warning(f"No internal URLs found beyond the base for {process_url}. Checking base URL only.")
+                logging.warning(f"No internal URLs found beyond the base for {process_url}. Checking base URL only.")
 
             logging.info(f"Crawling took {time.time() - crawl_start_time:.2f}s. Found {len(urls_to_check)} URLs.")
 
@@ -401,7 +400,7 @@ def index():
             combined_text = ' '.join(url_texts.values())
             lang = detect_language(combined_text)
             stop_words = get_dynamic_stop_words(combined_text, lang)
-            del combined_text # Release memory if large
+            del combined_text  # Release memory if large
             logging.info(f"Detected language: {lang}. Generated {len(stop_words)} stop words.")
 
             phrases_to_check = set()
@@ -423,7 +422,7 @@ def index():
             # --- End Optional ---
 
             if not phrases_to_check:
-                 raise ValueError("پس از پردازش، هیچ کلمه کلیدی معتبری برای بررسی وجود ندارد.")
+                raise ValueError("پس از پردازش، هیچ کلمه کلیدی معتبری برای بررسی وجود ندارد.")
             logging.info(f"Checking {len(phrases_to_check)} unique phrases/words...")
 
             check_start_time = time.time()
@@ -440,7 +439,7 @@ def index():
                         temp_results.append(result)
                     except Exception as e:
                         logging.error(f"Error processing result for keyword '{phrase}': {e}", exc_info=True)
-                        temp_results.append({"keyword": phrase, "found": False, "url": "Error", "score": 0, "preview": f"Processing Error"})
+                        temp_results.append({"keyword": phrase, "found": False, "url": "Error", "score": 0, "preview": "Processing Error"})
 
             results_data = sorted(temp_results, key=lambda x: x['keyword'])
             logging.info(f"Keyword checking took {time.time() - check_start_time:.2f} seconds.")
@@ -454,18 +453,18 @@ def index():
                     download_filename = output_filename
                     logging.info(f"Results file generated: {output_filename}")
                 except Exception as e:
-                     logging.error(f"Failed to generate results Excel file: {e}", exc_info=True)
-                     error_message = (error_message + " | " if error_message else "") + "خطا در تولید فایل نتایج اکسل."
+                    logging.error(f"Failed to generate results Excel file: {e}", exc_info=True)
+                    error_message = (error_message + " | " if error_message else "") + "خطا در تولید فایل نتایج اکسل."
             else:
-                 logging.warning("Keyword checking yielded no results data.")
-                 error_message = (error_message + " | " if error_message else "") + "هیچ نتیجه‌ای برای ذخیره در فایل اکسل وجود ندارد."
+                logging.warning("Keyword checking yielded no results data.")
+                error_message = (error_message + " | " if error_message else "") + "هیچ نتیجه‌ای برای ذخیره در فایل اکسل وجود ندارد."
 
         except (ValueError, ConnectionError) as e:
             logging.warning(f"Process failed due to input/connection error: {e}")
             error_message = str(e)
         except MemoryError:
-             logging.critical("Out of memory during processing!", exc_info=True)
-             error_message = "خطای کمبود حافظه رخ داد. ممکن است وب‌سایت یا فایل ورودی بسیار بزرگ باشد."
+            logging.critical("Out of memory during processing!", exc_info=True)
+            error_message = "خطای کمبود حافظه رخ داد. ممکن است وب‌سایت یا فایل ورودی بسیار بزرگ باشد."
         except Exception as e:
             logging.error(f"An unexpected error occurred during processing: {e}", exc_info=True)
             error_message = "یک خطای پیش‌بینی نشده در سرور رخ داد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید."
@@ -477,26 +476,24 @@ def index():
                 except OSError as e:
                     logging.error(f"Error removing temporary upload file {temp_path}: {e}")
 
-    # --- Render Template --- (This block is outside the 'if request.method == POST')
+    # --- Render Template ---
     total_time = time.time() - start_time
     if error_message:
         logging.error(f"Request finished with error in {total_time:.2f}s. Error: {error_message}")
-    elif request.method == 'POST': # Log success only for POST requests that didn't error out
+    elif request.method == 'POST':  # Log success only for POST requests that didn't error out
         logging.info(f"Request processed successfully in {total_time:.2f}s.")
 
     # Determine website URL to render back in the form
-    render_website_url = website_url # Use value from GET or top of function by default
+    render_website_url = website_url  # Use value from GET or top of function by default
     if request.method == 'POST' and 'submitted_website_url' in locals():
-        render_website_url = submitted_website_url # Use original submitted value if POST failed validation
+        render_website_url = submitted_website_url  # Use original submitted value if POST failed validation
 
-    # The return statement must be at the function's base indentation level
     return render_template("index.html",
                            results=results_data,
                            download_filename=download_filename,
                            error=error_message,
                            website=render_website_url,
                            email=email)
-# --- End of index() function definition ---
 
 @app.route('/download/<filename>')
 def download(filename):
@@ -517,10 +514,10 @@ def download(filename):
 # --- Main Execution ---
 if __name__ == '__main__':
     try:
-         init_db()
+        init_db()
     except Exception as e:
-         logging.critical(f"CRITICAL: Database could not be initialized. Exiting. Error: {e}", exc_info=True)
-         exit(1)
+        logging.critical(f"CRITICAL: Database could not be initialized. Exiting. Error: {e}", exc_info=True)
+        exit(1)
 
     cleanup_old_files()
     logging.info("Starting Flask development server...")
