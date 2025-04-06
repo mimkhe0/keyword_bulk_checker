@@ -42,6 +42,7 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RESULTS_FOLDER'] = RESULTS_FOLDER
 
+# Ensure directories exist
 os.makedirs(INSTANCE_FOLDER, exist_ok=True)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
@@ -448,6 +449,9 @@ def index():
                 try:
                     output_filename = f"results_{uuid.uuid4()}.xlsx"
                     output_path = os.path.join(app.config['RESULTS_FOLDER'], output_filename)
+                    # Ensure the directory is writable
+                    if not os.access(app.config['RESULTS_FOLDER'], os.W_OK):
+                        raise OSError(f"No write permission for directory: {app.config['RESULTS_FOLDER']}")
                     output_df = pd.DataFrame(results_data, columns=['keyword', 'found', 'url', 'score', 'preview'])
                     output_df.to_excel(output_path, index=False, engine='openpyxl')
                     download_filename = output_filename
@@ -469,7 +473,7 @@ def index():
             logging.error(f"An unexpected error occurred during processing: {e}", exc_info=True)
             error_message = "یک خطای پیش‌بینی نشده در سرور رخ داد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید."
         finally:
-            if temp_path and os.path.isfile(temp_path):
+            if temp_path and os.path.exists(temp_path):
                 try:
                     os.remove(temp_path)
                     logging.info(f"Cleaned up temporary upload file: {temp_path}")
@@ -488,12 +492,14 @@ def index():
     if request.method == 'POST' and 'submitted_website_url' in locals():
         render_website_url = submitted_website_url  # Use original submitted value if POST failed validation
 
-    return render_template("index.html",
-                           results=results_data,
-                           download_filename=download_filename,
-                           error=error_message,
-                           website=render_website_url,
-                           email=email)
+    return render_template(
+        "index.html",
+        results=results_data,
+        download_filename=download_filename,
+        error=error_message,
+        website=render_website_url,
+        email=email
+    )
 
 @app.route('/download/<filename>')
 def download(filename):
@@ -503,8 +509,8 @@ def download(filename):
         abort(400)
     file_path = os.path.join(app.config['RESULTS_FOLDER'], safe_filename)
     try:
-        if not os.path.isfile(file_path):
-            logging.warning(f"Download request for non-existent or non-file path: {file_path}")
+        if not os.path.exists(file_path) or not os.path.isfile(file_path):
+            logging.warning(f"Download request for non-existent file: {file_path}")
             abort(404)
         return send_file(file_path, as_attachment=True)
     except Exception as e:
