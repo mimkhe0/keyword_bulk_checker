@@ -192,7 +192,12 @@ def check_keyword_in_texts(phrase, url_texts_dict):
                 end = min(len(text), index + len(phrase_lower) + 60)
                 preview_text = text[start:end].strip()
                 if score > best_match["score"]:
-                    best_match.update({"found": True, "url": url, "score": score, "preview": f"...{preview_text}..."})
+                    best_match.update({
+                        "found": True,
+                        "url": url,
+                        "score": score,
+                        "preview": f"...{preview_text}..."
+                    })
         except Exception as e:
             logging.warning(f"Error checking '{phrase}' in {url}: {e}")
             continue
@@ -254,7 +259,6 @@ def index():
         sample_text = ' '.join(url_texts.values())
         lang = detect_language(sample_text)
         stop_words = get_dynamic_stop_words(sample_text, lang)
-
         phrases_to_check = set(kw.lower() for kw in keywords)
 
         temp_results = []
