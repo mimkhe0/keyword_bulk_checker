@@ -179,7 +179,7 @@ def get_dynamic_stop_words(text, lang, top_n=50):
     return base_stops.union(most_common_words)
 
 def check_keyword_in_texts(phrase, url_texts_dict):
-    best_match = {"found": False, "url": "-", "score": 0, "preview": ""}
+    best_match = {"found": False, "url": "-", "score": 0, "preview": "", "keyword": phrase}
     phrase_lower = phrase.lower()
     for url, text in url_texts_dict.items():
         if text is None:
@@ -192,13 +192,7 @@ def check_keyword_in_texts(phrase, url_texts_dict):
                 end = min(len(text), index + len(phrase_lower) + 60)
                 preview_text = text[start:end].strip()
                 if score > best_match["score"]:
-                    best_match = {
-                        "found": True,
-                        "url": url,
-                        "score": score,
-                        "preview": f"...{preview_text}...",
-                        "keyword": phrase
-                    }
+                    best_match.update({"found": True, "url": url, "score": score, "preview": f"...{preview_text}..."})
         except Exception as e:
             logging.warning(f"Error checking '{phrase}' in {url}: {e}")
             continue
