@@ -56,7 +56,7 @@ try:
         raise OSError(f"No write permission for directory: {RESULTS_FOLDER}")
     logging.info(f"Directories created successfully: {INSTANCE_FOLDER}, {UPLOAD_FOLDER}, {RESULTS_FOLDER}")
 except OSError as e:
-    logging.critical(f"Failed to create or access directories: {e}", exc_info=True)
+    print(f"Failed to create or access directories: {e}")
     raise
 
 logging.basicConfig(
