@@ -129,7 +129,7 @@ def fetch_page_text(url):
         text = re.sub(r'\s+', ' ', text.lower())
 
         # Save debug version for best-istikhara.com
-        if "best-istikhara.com" in url:
+        if "istikhara" in url:
             debug_path = os.path.join(RESULTS_FOLDER, "_debug_text.txt")
             with open(debug_path, "w", encoding="utf-8") as f:
                 f.write(text)
