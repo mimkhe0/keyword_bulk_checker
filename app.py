@@ -212,7 +212,15 @@ def index():
 
             full_text = ' '.join(t for t in texts.values() if t)
             stop_words = extract_keywords(full_text)
-            keywords = [k for k in keywords if k not in stop_words]
+
+            refined_keywords = set()
+            for kw in keywords:
+                refined_keywords.add(kw)
+                words = re.findall(r'\b\w{3,}\b', kw.lower())
+                for w in words:
+                    if w not in stop_words:
+                        refined_keywords.add(w)
+            keywords = list(refined_keywords)
 
             with ThreadPoolExecutor(max_workers=MAX_WORKERS_CHECK) as exec:
                 futures = [exec.submit(check_keywords, [kw], texts) for kw in keywords]
