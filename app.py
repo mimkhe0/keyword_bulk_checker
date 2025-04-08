@@ -14,8 +14,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.common.exceptions import TimeoutException, WebDriverException, NoSuchElementException, ElementNotVisibleException
 from io import BytesIO
+from email_validator import validate_email, EmailNotValidError
 
 # --- Configuration ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -27,8 +28,10 @@ ALLOWED_EXTENSIONS: Set[str] = {'.xlsx'}
 SELENIUM_TIMEOUT = 25
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
-# --- Stop Words (Simple English List) ---
-STOP_WORDS: Set[str] = {...}  # همانطور که قبلاً اشاره شد
+# --- Stop Words (English, Persian, Arabic Lists) ---
+STOP_WORDS_ENGLISH: Set[str] = {"the", "a", "an", "of", "and", "to", "in", "for", "on", "with", "at", "by", "from", "as", "is", "it"}
+STOP_WORDS_PERSIAN: Set[str] = {"و", "از", "به", "در", "با", "برای", "که", "این", "آن", "اینکه", "تا", "بر", "می", "باشد", "ندارد", "همچنین", "چه", "چرا", "کجا", "چگونه"}
+STOP_WORDS_ARABIC: Set[str] = {"و", "من", "على", "في", "إلى", "أن", "كان", "ل", "مع", "عن", "منذ", "هذا", "ذلك", "لكن", "الذي", "إلى", "ما"}
 
 # --- Folder Setup ---
 for folder in [UPLOAD_FOLDER, RESULTS_FOLDER]:
@@ -63,6 +66,20 @@ def is_valid_excel(filepath):
     mime_type = mime.from_file(filepath)
     return mime_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
+def validate_url(url: str) -> str:
+    """Validates the URL and ensures it starts with http:// or https://"""
+    if not (url.startswith('http://') or url.startswith('https://')):
+        url = 'https://' + url
+    return url
+
+def validate_email_address(email: str) -> bool:
+    """Validates the email format."""
+    try:
+        validate_email(email)
+        return True
+    except EmailNotValidError as e:
+        return False
+
 def fetch_page_text(url: str) -> str:
     """Fetches and cleans text content from a URL using Selenium."""
     driver = None
@@ -91,7 +108,7 @@ def fetch_page_text(url: str) -> str:
 
         return text
 
-    except (TimeoutException, WebDriverException) as e:
+    except (TimeoutException, WebDriverException, NoSuchElementException, ElementNotVisibleException) as e:
         logging.error(f"Error fetching {url}: {e}")
         return ""
     finally:
@@ -133,6 +150,48 @@ def generate_excel_report(results: List[Dict]) -> str:
     df.to_excel(output_path, index=False, engine='openpyxl')
     return output_name
 
+def analyze_phrases_for_keywords(phrases: List[str], page_text: str, url: str) -> List[Dict]:
+    """Analyzes each phrase, breaks it into words, and searches each word in the page content."""
+    results = []
+    for phrase in phrases:
+        words = phrase.split()  # Breaking the phrase into individual words
+        found_terms = {}
+        important_terms = []  # This can be enhanced by adding semantic analysis
+        total_score = 0
+        previews = {}
+
+        for word in words:
+            word = word.lower()
+            if word in page_text:
+                found_terms[word] = page_text.count(word)  # Count occurrences of the word in the text
+                total_score += found_terms[word]  # Add to total score (this can be enhanced)
+                previews[word] = page_text.lower().find(word)  # Save the first position as preview
+
+        if found_terms:
+            results.append({
+                'original_phrase': phrase,
+                'found_terms': found_terms,
+                'important_terms': important_terms,
+                'total_score': total_score,
+                'found_any': True if found_terms else False,
+                'analysis_notes': 'N/A',
+                'url': url,
+                'previews': previews
+            })
+        else:
+            results.append({
+                'original_phrase': phrase,
+                'found_terms': {},
+                'important_terms': important_terms,
+                'total_score': 0,
+                'found_any': False,
+                'analysis_notes': 'No terms found',
+                'url': url,
+                'previews': {}
+            })
+
+    return results
+
 # --- Flask Routes ---
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -144,13 +203,18 @@ def index():
     website: str = request.form.get('website', '').strip()
 
     if request.method == 'POST':
-        if not email: error = "لطفا ایمیل را وارد کنید."
-        elif not website: error = "لطفا آدرس وب‌سایت را وارد کنید."
+        if not email: 
+            error = "لطفا ایمیل را وارد کنید."
+        elif not website: 
+            error = "لطفا آدرس وب‌سایت را وارد کنید."
+        elif not validate_email_address(email):
+            error = "فرمت ایمیل وارد شده صحیح نیست."
         file = request.files.get('file')
-        if not file: error = "لطفا فایل اکسل حاوی عبارات کلیدی را انتخاب کنید."
+        if not file: 
+            error = "لطفا فایل اکسل حاوی عبارات کلیدی را انتخاب کنید."
 
-        if website and not (website.startswith('http://') or website.startswith('https://')):
-            website = 'https://' + website
+        if website:
+            website = validate_url(website)
 
         if not error:
             filepath = None
