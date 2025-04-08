@@ -2,290 +2,141 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تحلیلگر عبارات کلیدی</title> {/* Title updated */}
+    <title>تحلیلگر عبارات کلیدی</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 20px;
-            line-height: 1.6;
-            background-color: #f8f9fa; /* Light background */
-            color: #212529; /* Main text color */
-        }
-        .container { /* Container for content */
-            max-width: 1140px; /* Wider container for more columns */
-            margin: auto;
-            background-color: #fff; /* White background for content */
+            font-family: Tahoma, sans-serif;
+            background: #f5f5f5;
             padding: 30px;
-            border-radius: 8px; /* Rounded corners */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Soft shadow */
+            direction: rtl;
         }
-        h1, h2 {
-            color: #0056b3; /* Darker blue for headings */
-            border-bottom: 1px solid #dee2e6; /* Separator line */
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+        .container {
+            max-width: 1000px;
+            background: white;
+            margin: auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #ccc;
         }
         label {
-            display: block; /* Labels on separate lines */
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #495057; /* Darker gray for labels */
+            display: block;
+            margin-top: 15px;
         }
         input[type="email"],
         input[type="url"],
         input[type="file"] {
-            width: calc(100% - 22px); /* Adjust width to container */
+            width: 100%;
             padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ced4da; /* Standard border */
-            border-radius: 4px;
-            font-size: 1rem;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
-        button[type="submit"] {
-            background-color: #007bff; /* Primary blue */
+        button {
+            margin-top: 20px;
+            padding: 12px 25px;
+            background-color: #007bff;
             color: white;
-            padding: 10px 20px;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.2s ease; /* Color transition */
-        }
-        button[type="submit"]:hover {
-            background-color: #0056b3; /* Darker blue on hover */
         }
         .error {
-            color: #dc3545; /* Standard red for errors */
-            background-color: #f8d7da; /* Light red background */
-            border: 1px solid #f5c6cb; /* Red border */
+            margin-top: 20px;
+            color: red;
+            background-color: #ffeaea;
             padding: 10px;
-            border-radius: 4px;
-            margin-top: 15px;
+            border-radius: 5px;
         }
         table {
-            border-collapse: collapse;
             width: 100%;
+            border-collapse: collapse;
             margin-top: 30px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Table shadow */
-            font-size: 0.9rem; /* Slightly smaller font for table */
         }
         th, td {
-            border: 1px solid #dee2e6; /* Lighter gray border */
-            padding: 10px; /* Adjusted padding */
-            text-align: right; /* Right-align text */
-            vertical-align: top; /* Align content top */
-            word-break: break-word; /* Break long words */
+            padding: 12px;
+            border: 1px solid #ddd;
         }
         th {
-            background-color: #e9ecef; /* Very light gray for header */
-            font-weight: bold;
-            color: #495057;
+            background-color: #eee;
         }
-        tr:nth-child(even) { /* Striped rows for readability */
-            background-color: #f8f9fa;
-        }
-        td.status-found { /* Style for "Found" status */
-            color: #28a745; /* Green */
-            font-weight: bold;
-        }
-        td.status-not-found { /* Style for "Not Found" status */
-            color: #6c757d; /* Gray */
-        }
-        a { /* Link style */
-            color: #007bff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .download-link { /* Download link style */
+        .download-link {
             display: inline-block;
             margin-top: 20px;
+            background: green;
+            color: white;
             padding: 10px 15px;
-            background-color: #28a745; /* Green */
-            color: white;
-            border-radius: 4px;
+            border-radius: 5px;
             text-decoration: none;
-            transition: background-color 0.2s ease;
-        }
-        .download-link:hover {
-            background-color: #218838; /* Darker green */
-            color: white;
-            text-decoration: none;
-        }
-        /* Style for "Processing" message */
-        #loading {
-            display: none; /* Hidden by default */
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #fff3cd; /* Light yellow */
-            border: 1px solid #ffeeba; /* Yellow border */
-            color: #856404; /* Dark yellow text */
-            border-radius: 4px;
-        }
-        /* Small text style for previews or notes */
-        .small-text {
-            font-size: 0.85em;
-            color: #555;
-        }
-        .term-list { /* Style for list of terms */
-            font-size: 0.85em;
-            color: #333;
-        }
-        .found-term {
-             font-weight: bold;
-             color: #198754; /* Bootstrap success green */
-        }
-        .not-found-term{
-             color: #6c757d; /* Bootstrap secondary gray */
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>تحلیلگر عبارات کلیدی</h1>
+<div class="container">
+    <h1>تحلیلگر عبارات کلیدی</h1>
 
-        {% if error %}
-            <p class="error">{{ error }}</p>
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" action="/">
+        <label for="email">ایمیل:</label>
+        <input type="email" name="email" id="email" required value="{{ email or '' }}">
+
+        <label for="website">آدرس وب‌سایت:</label>
+        <input type="url" name="website" id="website" required value="{{ website or '' }}">
+
+        <label for="file">فایل اکسل (.xlsx):</label>
+        <input type="file" name="file" id="file" accept=".xlsx" required>
+
+        <button type="submit">بررسی عبارات کلیدی</button>
+    </form>
+
+    {% if results %}
+        <h2>نتایج</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>عبارت</th>
+                <th>کلمات مهم</th>
+                <th>کلمات یافت‌شده</th>
+                <th>امتیاز</th>
+                <th>پیش‌نمایش</th>
+                <th>وضعیت</th>
+                <th>یادداشت</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for r in results %}
+                <tr>
+                    <td>{{ r.original_phrase }}</td>
+                    <td>{{ r.important_terms | join(', ') }}</td>
+                    <td>
+                        {% if r.found_terms %}
+                            {% for term, score in r.found_terms.items() %}
+                                {{ term }} ({{ score }}){% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ r.total_score }}</td>
+                    <td>{{ r.previews.values() | list | first }}</td>
+                    <td style="color: {{ 'green' if r.found_any else 'gray' }}">
+                        {{ 'یافت شد' if r.found_any else 'یافت نشد' }}
+                    </td>
+                    <td>{{ r.analysis_notes or '-' }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        {% if download_filename %}
+            <a href="{{ url_for('download', filename=download_filename) }}" class="download-link">
+                دانلود فایل اکسل
+            </a>
         {% endif %}
-
-        <form id="keywordForm" method="post" enctype="multipart/form-data">
-            <label for="email">ایمیل:</label>
-            <input type="email" id="email" name="email" required value="{{ email or '' }}">
-
-            <label for="website">آدرس وب‌سایت:</label>
-            <input type="url" id="website" name="website" required value="{{ website or '' }}" placeholder="https://example.com">
-
-            <label for="file">بارگذاری عبارات کلیدی (فایل اکسل):</label> {/* Label updated */}
-            <input type="file" id="file" name="file" accept=".xlsx" required>
-            <small style="display: block; margin-top: -10px; margin-bottom: 15px; color: #6c757d;">فقط فایل‌های .xlsx مجاز هستند.</small>
-
-            <button type="submit">تحلیل عبارات</button> {/* Button text updated */}
-        </form>
-
-        <div id="loading">در حال پردازش، لطفاً صبر کنید... این عملیات ممکن است کمی طول بکشد.</div>
-
-        {% if results is defined and results %} {# Check if results is defined and not empty #}
-            <h2>نتایج تحلیل</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">عبارت اصلی (از فایل)</th>
-                        <th style="width: 15%;">کلمات مهم جستجو شده</th>
-                        <th style="width: 15%;">کلمات یافت شده (تعداد)</th>
-                        <th style="width: 8%;">امتیاز کل</th>
-                        <th style="width: 8%;">وضعیت کلی</th>
-                        <th style="width: 24%;">نمونه پیش‌نمایش</th>
-                        <th style="width: 10%;">ملاحظات</th> {# Added Notes Column #}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for result in results %}
-                        <tr>
-                            <td>{{ result.original_phrase | e }}</td>
-                            <td class="term-list">
-                                {# Display list of important terms searched #}
-                                {% if result.important_terms %}
-                                    {{ result.important_terms | join(', ') }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td class="term-list">
-                                {# Display found terms and their scores #}
-                                {% if result.found_terms %}
-                                    {% for term, score in result.found_terms.items() %}
-                                        <span class="found-term">{{ term }}</span>({{ score }}){% if not loop.last %}; {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                     {% if result.found_any %} {# Should not happen if found_any is true, but safety check #}
-                                        یافت شد (جزئیات نامشخص)
-                                     {% else %}
-                                        -
-                                     {% endif %}
-                                {% endif %}
-                            </td>
-                            <td>{{ result.total_score }}</td>
-                            <td class="{{ 'status-found' if result.found_any else 'status-not-found' }}">
-                                {# Display overall status based on found_any flag #}
-                                {{ 'یافت شد' if result.found_any else 'یافت نشد' }}
-                            </td>
-                            <td class="small-text">
-                                {# Display the first available preview snippet #}
-                                {% set first_preview = result.previews.values() | first | default('', true) %}
-                                {{ first_preview | e }}
-                            </td>
-                             <td class="small-text">
-                                {# Display any analysis notes/errors for this phrase #}
-                                {{ result.analysis_notes if result.analysis_notes else '-' }}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            {% if download_filename %}
-                <a href="{{ url_for('download', filename=download_filename) }}" class="download-link">دانلود نتایج کامل (Excel)</a>
-                {# Used url_for for better practice #}
-            {% endif %}
-
-        {% elif request.method == 'POST' and not error %}
-             {# Show a message if processing finished but no results (e.g., empty file or no keywords found)#}
-             <p style="margin-top: 20px; color: #6c757d;">پردازش کامل شد، اما هیچ عبارتی برای نمایش نتایج یافت نشد.</p>
-        {% endif %}
-    </div>
-
-    <script>
-        document.getElementById('keywordForm').addEventListener('submit', function(event) {
-            // Basic client-side validation
-            var email = document.getElementById('email').value;
-            var website = document.getElementById('website').value;
-            var fileInput = document.getElementById('file');
-            var file = fileInput.value;
-            var isValid = true;
-
-            if (!email || !website || !file) {
-                 // Optional: add specific messages near fields or use HTML5 built-in validation reporting
-                 console.log("Form validation failed: Missing required fields.");
-                 isValid = false;
-                 // We can prevent submission here if needed, but server-side validation is key
-                 // event.preventDefault(); // Uncomment to stop submission if fields are empty
-            }
-
-             // Check file extension (basic check)
-            if (file) {
-                var allowedExtensions = /(\.xlsx)$/i; // Case-insensitive check for .xlsx
-                if (!allowedExtensions.exec(file)) {
-                    alert('فرمت فایل نامعتبر است. لطفاً فقط فایل .xlsx انتخاب کنید.');
-                    fileInput.value = ''; // Clear the invalid file selection
-                    isValid = false;
-                    event.preventDefault(); // Stop submission
-                }
-            }
-
-
-            if (isValid) {
-                 // Show loading message
-                document.getElementById('loading').style.display = 'block';
-                // Disable button to prevent multiple submissions
-                var submitButton = this.querySelector('button[type="submit"]');
-                submitButton.disabled = true;
-                submitButton.textContent = 'در حال پردازش...';
-            }
-             // Allow form submission to proceed if validation passed (or wasn't stopped)
-        });
-
-        // Optional: Hide loading message if the page reloads with an error or results
-        window.addEventListener('load', function() {
-           // If there's an error message OR results table OR download link, hide loading
-           var errorMsg = document.querySelector('.error');
-           var resultsTable = document.querySelector('table');
-           var downloadLink = document.querySelector('.download-link');
-           if (errorMsg || resultsTable || downloadLink) {
-                document.getElementById('loading').style.display = 'none';
-           }
-        });
-    </script>
+    {% endif %}
+</div>
 </body>
 </html>
