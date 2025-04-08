@@ -11,7 +11,7 @@ from collections import Counter
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import undetected_chromedriver.v2 as uc
+import undetected_chromedriver as uc
 from selenium.webdriver.chrome.options import Options
 
 # --- Config ---
@@ -88,13 +88,13 @@ def check_keywords(keywords, text, url):
         preview = ""
         if found:
             idx = text.find(kw)
-            preview = text[max(0, idx - 50):idx + 50]
+            preview = text[max(0, idx - 50):idx + len(kw) + 50]
         results.append({
             'keyword': kw,
             'found': found,
             'url': url if found else "-",
             'score': score,
-            'preview': preview
+            'preview': f"...{preview}..." if preview else ""
         })
     return results
 
