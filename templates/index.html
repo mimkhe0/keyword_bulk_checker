@@ -2,26 +2,28 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>تحلیلگر عبارات کلیدی</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="ابزاری برای تحلیل عبارات کلیدی در وب‌سایت‌ها">
+    <title>تحلیلگر عبارات کلیدی</title>
     <style>
         body {
             font-family: Tahoma, sans-serif;
             background: #f5f5f5;
-            padding: 30px;
+            padding: 20px;
             direction: rtl;
         }
         .container {
-            max-width: 1000px;
+            max-width: 90%;
             background: white;
-            margin: auto;
-            padding: 30px;
+            margin: 0 auto;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px #ccc;
         }
         label {
             display: block;
             margin-top: 15px;
+            font-weight: bold;
         }
         input[type="email"],
         input[type="url"],
@@ -31,6 +33,7 @@
             margin-top: 5px;
             border-radius: 5px;
             border: 1px solid #ccc;
+            box-sizing: border-box;
         }
         button {
             margin-top: 20px;
@@ -41,12 +44,21 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        button:hover {
+            background-color: #0056b3;
+        }
         .error {
             margin-top: 20px;
             color: red;
             background-color: #ffeaea;
             padding: 10px;
             border-radius: 5px;
+            position: relative;
+        }
+        .error span {
+            float: left;
+            cursor: pointer;
+            font-weight: bold;
         }
         table {
             width: 100%;
@@ -56,6 +68,7 @@
         th, td {
             padding: 12px;
             border: 1px solid #ddd;
+            text-align: right;
         }
         th {
             background-color: #eee;
@@ -69,6 +82,14 @@
             border-radius: 5px;
             text-decoration: none;
         }
+        .download-link:hover {
+            background: darkgreen;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            th, td { font-size: 14px; }
+        }
     </style>
 </head>
 <body>
@@ -76,23 +97,25 @@
     <h1>تحلیلگر عبارات کلیدی</h1>
 
     {% if error %}
-        <div class="error">{{ error }}</div>
+        <div class="error" onclick="this.style.display='none'">
+            {{ error }} <span>✖</span>
+        </div>
     {% endif %}
 
     <form method="post" enctype="multipart/form-data" action="/">
         <label for="email">ایمیل:</label>
-        <input type="email" name="email" id="email" required value="{{ email or '' }}">
+        <input type="email" name="email" id="email" required value="{{ email or '' }}" aria-label="ایمیل">
 
         <label for="website">آدرس وب‌سایت:</label>
-        <input type="url" name="website" id="website" required value="{{ website or '' }}">
+        <input type="url" name="website" id="website" required value="{{ website or '' }}" aria-label="آدرس وب‌سایت">
 
         <label for="file">فایل اکسل (.xlsx):</label>
-        <input type="file" name="file" id="file" accept=".xlsx" required>
+        <input type="file" name="file" id="file" accept=".xlsx" required aria-label="انتخاب فایل اکسل">
 
         <button type="submit">بررسی عبارات کلیدی</button>
     </form>
 
-    {% if results %}
+    {% if results and results|length > 0 %}
         <h2>نتایج</h2>
         <table>
             <thead>
@@ -121,7 +144,7 @@
                         {% endif %}
                     </td>
                     <td>{{ r.total_score }}</td>
-                    <td>{{ r.previews.values() | list | first }}</td>
+                    <td>{{ r.previews.values() | join(' | ') or '-' }}</td>
                     <td style="color: {{ 'green' if r.found_any else 'gray' }}">
                         {{ 'یافت شد' if r.found_any else 'یافت نشد' }}
                     </td>
