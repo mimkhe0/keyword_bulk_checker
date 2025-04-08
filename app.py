@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-import flask
 from flask import Flask, render_template, request, send_file, abort, g
 import pandas as pd
-import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -16,6 +14,8 @@ from datetime import datetime, timedelta
 import logging
 import sqlite3
 import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 # --- Configuration ---
 INSTANCE_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
@@ -24,15 +24,14 @@ UPLOAD_FOLDER = os.path.join(INSTANCE_FOLDER, 'uploads')
 RESULTS_FOLDER = os.path.join(INSTANCE_FOLDER, 'results')
 LOG_FILE = os.path.join(INSTANCE_FOLDER, 'app.log')
 
-TIMEOUT_PER_URL = 8
+TIMEOUT_PER_URL = 10
 MAX_URLS_TO_FETCH = 30
-MAX_WORKERS_FETCH = 15
+MAX_WORKERS_FETCH = 10
 MAX_WORKERS_CHECK = 10
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_EXTENSIONS = {'.xlsx'}
 CLEANUP_DAYS = 1
 
-# --- Flask App Setup ---
 app = Flask(__name__)
 app.config.from_mapping(
     INSTANCE_FOLDER=INSTANCE_FOLDER,
@@ -53,7 +52,6 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# --- Database Functions ---
 def get_db():
     if '_database' not in g:
         g._database = sqlite3.connect(app.config['DATABASE'])
@@ -88,7 +86,6 @@ def save_user_data(email, website):
         logging.error(f"Failed to save user data: {e}")
         return False
 
-# --- Helper Functions ---
 def allowed_file(filename):
     return '.' in filename and os.path.splitext(filename)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -104,39 +101,43 @@ def cleanup_old_files():
                 except Exception as e:
                     logging.warning(f"Failed to remove {path}: {e}")
 
-def fetch_page_text(url, session):
+def fetch_page_text(url):
     try:
-        resp = session.get(url, timeout=TIMEOUT_PER_URL)
-        resp.raise_for_status()
-        if 'html' not in resp.headers.get('Content-Type', '').lower():
-            return url, None
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        driver = webdriver.Chrome(options=chrome_options)
+        driver.set_page_load_timeout(TIMEOUT_PER_URL)
+        driver.get(url)
+        html = driver.page_source
+        driver.quit()
 
-        resp.encoding = resp.apparent_encoding
-        soup = BeautifulSoup(resp.text, 'lxml')
-
+        soup = BeautifulSoup(html, 'lxml')
         for tag in soup(['script', 'style', 'noscript']):
             tag.decompose()
 
         text = soup.get_text(separator=' ', strip=True)
         return url, re.sub(r'\s+', ' ', text.lower())
-
     except Exception as e:
-        logging.warning(f"Error fetching {url}: {e}")
+        logging.warning(f"Selenium fetch failed for {url}: {e}")
         return url, None
 
-def get_internal_urls(base_url, session):
+def get_internal_urls(base_url):
+    import requests
     found = set()
     base = base_url if base_url.startswith('http') else 'https://' + base_url
     try:
-        resp = session.get(base, timeout=10)
-        resp.raise_for_status()
-        soup = BeautifulSoup(resp.content, 'lxml')
-        for a in soup.find_all('a', href=True):
-            href = urljoin(base, a['href']).split('#')[0].rstrip('/')
-            if href.startswith(base) and validators.url(href):
-                found.add(href)
-                if len(found) >= MAX_URLS_TO_FETCH:
-                    break
+        with requests.Session() as session:
+            resp = session.get(base, timeout=10)
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.content, 'lxml')
+            for a in soup.find_all('a', href=True):
+                href = urljoin(base, a['href']).split('#')[0].rstrip('/')
+                if href.startswith(base) and validators.url(href):
+                    found.add(href)
+                    if len(found) >= MAX_URLS_TO_FETCH:
+                        break
     except Exception as e:
         logging.warning(f"Crawl failed for {base}: {e}")
     return list(found or [base])
@@ -146,7 +147,7 @@ def detect_language(text):
         return 'fa_ar'
     return 'en'
 
-def extract_keywords(text, lang):
+def extract_keywords(text):
     words = re.findall(r'\b\w{3,}\b', text)
     common = Counter(words).most_common(50)
     return {w for w, _ in common}
@@ -173,7 +174,6 @@ def check_keywords(keywords, texts):
         results.append(best)
     return results
 
-# --- Routes ---
 @app.route('/', methods=['GET', 'POST'])
 def index():
     error = None
@@ -205,15 +205,13 @@ def index():
             os.remove(temp_path)
 
             save_user_data(email, website)
-            with requests.Session() as session:
-                urls = get_internal_urls(website, session)
-                with ThreadPoolExecutor(max_workers=MAX_WORKERS_FETCH) as exec:
-                    tasks = {exec.submit(fetch_page_text, url, session): url for url in urls}
-                    texts = dict(f.result() for f in as_completed(tasks))
+            urls = get_internal_urls(website)
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS_FETCH) as exec:
+                tasks = {exec.submit(fetch_page_text, url): url for url in urls}
+                texts = dict(f.result() for f in as_completed(tasks))
 
             full_text = ' '.join(t for t in texts.values() if t)
-            lang = detect_language(full_text)
-            stop_words = extract_keywords(full_text, lang)
+            stop_words = extract_keywords(full_text)
             keywords = [k for k in keywords if k not in stop_words]
 
             with ThreadPoolExecutor(max_workers=MAX_WORKERS_CHECK) as exec:
@@ -242,7 +240,6 @@ def download(filename):
         abort(404)
     return send_file(full_path, as_attachment=True)
 
-# --- Main ---
 if __name__ == '__main__':
     init_db()
     cleanup_old_files()
