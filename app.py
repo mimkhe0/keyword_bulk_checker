@@ -113,6 +113,7 @@ def fetch_page_text(url):
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(TIMEOUT_PER_URL)
 
+        logging.info(f"[Selenium] Opening URL: {url}")
         driver.get(url)
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)
@@ -128,16 +129,16 @@ def fetch_page_text(url):
         text = soup.get_text(separator=' ', strip=True)
         text = re.sub(r'\s+', ' ', text.lower())
 
-        # Save debug version for all pages
         debug_id = re.sub(r'\W+', '_', url)
         debug_path = os.path.join(RESULTS_FOLDER, f"debug_{debug_id[:40]}.txt")
         with open(debug_path, "w", encoding="utf-8") as f:
             f.write(text)
+        logging.info(f"[DEBUG] Saved page text to: {debug_path}")
 
         return url, text
 
     except Exception as e:
-        logging.warning(f"Selenium fetch failed for {url}: {e}")
+        logging.error(f"[ERROR] Selenium fetch failed for {url}: {e}", exc_info=True)
         return url, None
 
 def get_internal_urls(base_url):
