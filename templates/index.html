@@ -3,62 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بررسی کننده کلمات کلیدی</title>
+    <title>تحلیلگر عبارات کلیدی</title> {/* Title updated */}
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 20px;
             line-height: 1.6;
-            background-color: #f8f9fa; /* رنگ پس‌زمینه ملایم */
-            color: #212529; /* رنگ متن اصلی */
+            background-color: #f8f9fa; /* Light background */
+            color: #212529; /* Main text color */
         }
-        .container { /* اضافه کردن یک کانتینر برای محتوا */
-            max-width: 960px;
+        .container { /* Container for content */
+            max-width: 1140px; /* Wider container for more columns */
             margin: auto;
-            background-color: #fff; /* پس‌زمینه سفید برای محتوا */
+            background-color: #fff; /* White background for content */
             padding: 30px;
-            border-radius: 8px; /* گوشه‌های گرد */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* سایه ملایم */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Soft shadow */
         }
         h1, h2 {
-            color: #0056b3; /* رنگ آبی تیره‌تر برای عناوین */
-            border-bottom: 1px solid #dee2e6; /* خط جداکننده زیر عناوین */
+            color: #0056b3; /* Darker blue for headings */
+            border-bottom: 1px solid #dee2e6; /* Separator line */
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
         label {
-            display: block; /* نمایش برچسب‌ها در خط جدا */
+            display: block; /* Labels on separate lines */
             margin-bottom: 5px;
             font-weight: bold;
-            color: #495057; /* رنگ خاکستری تیره‌تر برای برچسب‌ها */
+            color: #495057; /* Darker gray for labels */
         }
         input[type="email"],
         input[type="url"],
         input[type="file"] {
-            width: calc(100% - 22px); /* تطبیق عرض با کانتینر */
+            width: calc(100% - 22px); /* Adjust width to container */
             padding: 10px;
             margin-bottom: 15px;
-            border: 1px solid #ced4da; /* بوردر استاندارد */
+            border: 1px solid #ced4da; /* Standard border */
             border-radius: 4px;
             font-size: 1rem;
         }
         button[type="submit"] {
-            background-color: #007bff; /* رنگ آبی اصلی */
+            background-color: #007bff; /* Primary blue */
             color: white;
             padding: 10px 20px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 1rem;
-            transition: background-color 0.2s ease; /* انیمیشن تغییر رنگ */
+            transition: background-color 0.2s ease; /* Color transition */
         }
         button[type="submit"]:hover {
-            background-color: #0056b3; /* رنگ آبی تیره‌تر در هاور */
+            background-color: #0056b3; /* Darker blue on hover */
         }
         .error {
-            color: #dc3545; /* قرمز استاندارد برای خطا */
-            background-color: #f8d7da; /* پس‌زمینه قرمز روشن */
-            border: 1px solid #f5c6cb; /* بوردر قرمز */
+            color: #dc3545; /* Standard red for errors */
+            background-color: #f8d7da; /* Light red background */
+            border: 1px solid #f5c6cb; /* Red border */
             padding: 10px;
             border-radius: 4px;
             margin-top: 15px;
@@ -67,66 +67,84 @@
             border-collapse: collapse;
             width: 100%;
             margin-top: 30px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* سایه برای جدول */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Table shadow */
+            font-size: 0.9rem; /* Slightly smaller font for table */
         }
         th, td {
-            border: 1px solid #dee2e6; /* بوردر خاکستری روشن‌تر */
-            padding: 12px; /* پدینگ بیشتر */
-            text-align: right; /* راست‌چین کردن متن */
-            vertical-align: top; /* چینش عمودی بالا */
-            word-break: break-word; /* شکستن کلمات طولانی */
+            border: 1px solid #dee2e6; /* Lighter gray border */
+            padding: 10px; /* Adjusted padding */
+            text-align: right; /* Right-align text */
+            vertical-align: top; /* Align content top */
+            word-break: break-word; /* Break long words */
         }
         th {
-            background-color: #e9ecef; /* پس‌زمینه خاکستری خیلی روشن برای هدر */
+            background-color: #e9ecef; /* Very light gray for header */
             font-weight: bold;
             color: #495057;
         }
-        tr:nth-child(even) { /* رنگ راه‌راه برای خوانایی بهتر */
+        tr:nth-child(even) { /* Striped rows for readability */
             background-color: #f8f9fa;
         }
-        td.status-found { /* استایل برای وضعیت "یافت شد" */
-            color: #28a745; /* سبز */
+        td.status-found { /* Style for "Found" status */
+            color: #28a745; /* Green */
             font-weight: bold;
         }
-        td.status-not-found { /* استایل برای وضعیت "یافت نشد" */
-            color: #6c757d; /* خاکستری */
+        td.status-not-found { /* Style for "Not Found" status */
+            color: #6c757d; /* Gray */
         }
-        a { /* استایل لینک‌ها */
+        a { /* Link style */
             color: #007bff;
             text-decoration: none;
         }
         a:hover {
             text-decoration: underline;
         }
-        .download-link { /* استایل لینک دانلود */
+        .download-link { /* Download link style */
             display: inline-block;
             margin-top: 20px;
             padding: 10px 15px;
-            background-color: #28a745; /* رنگ سبز */
+            background-color: #28a745; /* Green */
             color: white;
             border-radius: 4px;
             text-decoration: none;
             transition: background-color 0.2s ease;
         }
         .download-link:hover {
-            background-color: #218838; /* سبز تیره‌تر */
+            background-color: #218838; /* Darker green */
             color: white;
             text-decoration: none;
         }
-        /* برای نمایش پیام "در حال پردازش" */
+        /* Style for "Processing" message */
         #loading {
-            display: none; /* مخفی به صورت پیش‌فرض */
+            display: none; /* Hidden by default */
             margin-top: 15px;
             padding: 10px;
-            background-color: #fff3cd; /* زرد روشن */
-            border: 1px solid #ffeeba; /* بوردر زرد */
-            color: #856404; /* رنگ متن زرد تیره */
+            background-color: #fff3cd; /* Light yellow */
+            border: 1px solid #ffeeba; /* Yellow border */
+            color: #856404; /* Dark yellow text */
             border-radius: 4px;
+        }
+        /* Small text style for previews or notes */
+        .small-text {
+            font-size: 0.85em;
+            color: #555;
+        }
+        .term-list { /* Style for list of terms */
+            font-size: 0.85em;
+            color: #333;
+        }
+        .found-term {
+             font-weight: bold;
+             color: #198754; /* Bootstrap success green */
+        }
+        .not-found-term{
+             color: #6c757d; /* Bootstrap secondary gray */
         }
     </style>
 </head>
 <body>
-    <div class="container"> <h1>بررسی کننده کلمات کلیدی</h1>
+    <div class="container">
+        <h1>تحلیلگر عبارات کلیدی</h1>
 
         {% if error %}
             <p class="error">{{ error }}</p>
@@ -139,62 +157,134 @@
             <label for="website">آدرس وب‌سایت:</label>
             <input type="url" id="website" name="website" required value="{{ website or '' }}" placeholder="https://example.com">
 
-            <label for="file">بارگذاری کلمات کلیدی (فایل اکسل):</label>
+            <label for="file">بارگذاری عبارات کلیدی (فایل اکسل):</label> {/* Label updated */}
             <input type="file" id="file" name="file" accept=".xlsx" required>
             <small style="display: block; margin-top: -10px; margin-bottom: 15px; color: #6c757d;">فقط فایل‌های .xlsx مجاز هستند.</small>
 
-            <button type="submit">بررسی کلمات کلیدی</button>
+            <button type="submit">تحلیل عبارات</button> {/* Button text updated */}
         </form>
 
-        <div id="loading">در حال پردازش، لطفاً صبر کنید...</div>
+        <div id="loading">در حال پردازش، لطفاً صبر کنید... این عملیات ممکن است کمی طول بکشد.</div>
 
-        {% if results %}
-            <h2>نتایج</h2>
+        {% if results is defined and results %} {# Check if results is defined and not empty #}
+            <h2>نتایج تحلیل</h2>
             <table>
-                <thead> <tr>
-                        <th>کلمه کلیدی</th>
-                        <th>وضعیت</th>
-                        <th>آدرس یافت شده</th>
-                        <th>امتیاز</th>
-                        <th>پیش‌نمایش متن</th>
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">عبارت اصلی (از فایل)</th>
+                        <th style="width: 15%;">کلمات مهم جستجو شده</th>
+                        <th style="width: 15%;">کلمات یافت شده (تعداد)</th>
+                        <th style="width: 8%;">امتیاز کل</th>
+                        <th style="width: 8%;">وضعیت کلی</th>
+                        <th style="width: 24%;">نمونه پیش‌نمایش</th>
+                        <th style="width: 10%;">ملاحظات</th> {# Added Notes Column #}
                     </tr>
                 </thead>
-                <tbody> {% for result in results %}
+                <tbody>
+                    {% for result in results %}
                         <tr>
-                            <td>{{ result.keyword | e }}</td> <td class="{{ 'status-found' if result.found else 'status-not-found' }}">
-                                {{ 'یافت شد' if result.found else 'یافت نشد' }}
-                            </td>
-                            <td>
-                                {% if result.url and result.url != '-' %}
-                                    <a href="{{ result.url }}" target="_blank" rel="noopener noreferrer">{{ result.url }}</a>
+                            <td>{{ result.original_phrase | e }}</td>
+                            <td class="term-list">
+                                {# Display list of important terms searched #}
+                                {% if result.important_terms %}
+                                    {{ result.important_terms | join(', ') }}
                                 {% else %}
                                     -
                                 {% endif %}
                             </td>
-                            <td>{{ result.score }}</td>
-                            <td>{{ result.preview | e }}</td>
+                            <td class="term-list">
+                                {# Display found terms and their scores #}
+                                {% if result.found_terms %}
+                                    {% for term, score in result.found_terms.items() %}
+                                        <span class="found-term">{{ term }}</span>({{ score }}){% if not loop.last %}; {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                     {% if result.found_any %} {# Should not happen if found_any is true, but safety check #}
+                                        یافت شد (جزئیات نامشخص)
+                                     {% else %}
+                                        -
+                                     {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>{{ result.total_score }}</td>
+                            <td class="{{ 'status-found' if result.found_any else 'status-not-found' }}">
+                                {# Display overall status based on found_any flag #}
+                                {{ 'یافت شد' if result.found_any else 'یافت نشد' }}
+                            </td>
+                            <td class="small-text">
+                                {# Display the first available preview snippet #}
+                                {% set first_preview = result.previews.values() | first | default('', true) %}
+                                {{ first_preview | e }}
+                            </td>
+                             <td class="small-text">
+                                {# Display any analysis notes/errors for this phrase #}
+                                {{ result.analysis_notes if result.analysis_notes else '-' }}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
 
             {% if download_filename %}
-                <a href="/download/{{ download_filename }}" class="download-link">دانلود نتایج (Excel)</a>
+                <a href="{{ url_for('download', filename=download_filename) }}" class="download-link">دانلود نتایج کامل (Excel)</a>
+                {# Used url_for for better practice #}
             {% endif %}
+
+        {% elif request.method == 'POST' and not error %}
+             {# Show a message if processing finished but no results (e.g., empty file or no keywords found)#}
+             <p style="margin-top: 20px; color: #6c757d;">پردازش کامل شد، اما هیچ عبارتی برای نمایش نتایج یافت نشد.</p>
         {% endif %}
-    </div> <script>
-        document.getElementById('keywordForm').addEventListener('submit', function() {
-            // نمایش پیام لودینگ فقط اگر تمام فیلدهای required پر شده باشند (اعتبارسنجی پایه)
+    </div>
+
+    <script>
+        document.getElementById('keywordForm').addEventListener('submit', function(event) {
+            // Basic client-side validation
             var email = document.getElementById('email').value;
             var website = document.getElementById('website').value;
-            var file = document.getElementById('file').value;
-            if (email && website && file) {
-                 document.getElementById('loading').style.display = 'block';
-                 // غیرفعال کردن دکمه برای جلوگیری از ارسال مجدد (اختیاری)
-                 this.querySelector('button[type="submit"]').disabled = true;
-                 this.querySelector('button[type="submit"]').textContent = 'در حال پردازش...';
+            var fileInput = document.getElementById('file');
+            var file = fileInput.value;
+            var isValid = true;
+
+            if (!email || !website || !file) {
+                 // Optional: add specific messages near fields or use HTML5 built-in validation reporting
+                 console.log("Form validation failed: Missing required fields.");
+                 isValid = false;
+                 // We can prevent submission here if needed, but server-side validation is key
+                 // event.preventDefault(); // Uncomment to stop submission if fields are empty
             }
-            // مرورگر به صورت پیش‌فرض ارسال فرم را ادامه می‌دهد
+
+             // Check file extension (basic check)
+            if (file) {
+                var allowedExtensions = /(\.xlsx)$/i; // Case-insensitive check for .xlsx
+                if (!allowedExtensions.exec(file)) {
+                    alert('فرمت فایل نامعتبر است. لطفاً فقط فایل .xlsx انتخاب کنید.');
+                    fileInput.value = ''; // Clear the invalid file selection
+                    isValid = false;
+                    event.preventDefault(); // Stop submission
+                }
+            }
+
+
+            if (isValid) {
+                 // Show loading message
+                document.getElementById('loading').style.display = 'block';
+                // Disable button to prevent multiple submissions
+                var submitButton = this.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'در حال پردازش...';
+            }
+             // Allow form submission to proceed if validation passed (or wasn't stopped)
+        });
+
+        // Optional: Hide loading message if the page reloads with an error or results
+        window.addEventListener('load', function() {
+           // If there's an error message OR results table OR download link, hide loading
+           var errorMsg = document.querySelector('.error');
+           var resultsTable = document.querySelector('table');
+           var downloadLink = document.querySelector('.download-link');
+           if (errorMsg || resultsTable || downloadLink) {
+                document.getElementById('loading').style.display = 'none';
+           }
         });
     </script>
 </body>
