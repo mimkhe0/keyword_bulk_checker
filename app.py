@@ -128,11 +128,11 @@ def fetch_page_text(url):
         text = soup.get_text(separator=' ', strip=True)
         text = re.sub(r'\s+', ' ', text.lower())
 
-        # Save debug version for best-istikhara.com
-        if "istikhara" in url:
-            debug_path = os.path.join(RESULTS_FOLDER, "_debug_text.txt")
-            with open(debug_path, "w", encoding="utf-8") as f:
-                f.write(text)
+        # Save debug version for all pages
+        debug_id = re.sub(r'\W+', '_', url)
+        debug_path = os.path.join(RESULTS_FOLDER, f"debug_{debug_id[:40]}.txt")
+        with open(debug_path, "w", encoding="utf-8") as f:
+            f.write(text)
 
         return url, text
 
