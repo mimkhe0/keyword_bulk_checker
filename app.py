@@ -126,7 +126,15 @@ def fetch_page_text(url):
             tag.decompose()
 
         text = soup.get_text(separator=' ', strip=True)
-        return url, re.sub(r'\s+', ' ', text.lower())
+        text = re.sub(r'\s+', ' ', text.lower())
+
+        # Save debug version for best-istikhara.com
+        if "best-istikhara.com" in url:
+            debug_path = os.path.join(RESULTS_FOLDER, "_debug_text.txt")
+            with open(debug_path, "w", encoding="utf-8") as f:
+                f.write(text)
+
+        return url, text
 
     except Exception as e:
         logging.warning(f"Selenium fetch failed for {url}: {e}")
