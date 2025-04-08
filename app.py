@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 import logging
 import sqlite3
 import time
-from selenium import webdriver
+import undetected_chromedriver as uc
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -113,7 +113,7 @@ def fetch_page_text(url):
         chrome_options.add_argument(
             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         )
-        driver = webdriver.Chrome(options=chrome_options)
+        driver = uc.Chrome(options=chrome_options)
         driver.set_page_load_timeout(TIMEOUT_PER_URL)
 
         logging.info(f"[Selenium] Opening URL: {url}")
