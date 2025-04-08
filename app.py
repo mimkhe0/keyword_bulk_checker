@@ -16,6 +16,9 @@ import sqlite3
 import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # --- Configuration ---
 INSTANCE_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
@@ -109,7 +112,12 @@ def fetch_page_text(url):
         chrome_options.add_argument('--disable-dev-shm-usage')
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(TIMEOUT_PER_URL)
+
         driver.get(url)
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(2)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
         html = driver.page_source
         driver.quit()
 
@@ -119,6 +127,7 @@ def fetch_page_text(url):
 
         text = soup.get_text(separator=' ', strip=True)
         return url, re.sub(r'\s+', ' ', text.lower())
+
     except Exception as e:
         logging.warning(f"Selenium fetch failed for {url}: {e}")
         return url, None
@@ -200,7 +209,6 @@ def index():
                 tasks = {exec.submit(fetch_page_text, url): url for url in urls}
                 texts = dict(f.result() for f in as_completed(tasks))
 
-            # Generate final keyword list
             final_keywords = set()
             for phrase in input_phrases:
                 final_keywords.add(phrase)
