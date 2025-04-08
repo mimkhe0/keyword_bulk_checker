@@ -7,12 +7,10 @@ import logging
 import pandas as pd
 from flask import Flask, render_template, request, send_file
 from werkzeug.utils import secure_filename
-from collections import Counter
-import validators
-
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urljoin
+from bs4 import BeautifulSoup
+import validators
 
 import undetected_chromedriver as uc
 from selenium.webdriver.chrome.options import Options
@@ -21,23 +19,23 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # -------------------- Config --------------------
-INSTANCE_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance')
+INSTANCE_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'instance'))
 UPLOAD_FOLDER = os.path.join(INSTANCE_FOLDER, 'uploads')
 RESULTS_FOLDER = os.path.join(INSTANCE_FOLDER, 'results')
-LOG_FILE = os.path.join(INSTANCE_FOLDER, 'app.log')
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-TIMEOUT_PER_URL = 20
-MAX_URLS_TO_FETCH = 20
-MAX_WORKERS = 10
-
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
+LOG_FILE = os.path.join(INSTANCE_FOLDER, 'app.log')
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
+MAX_FILE_SIZE = 10 * 1024 * 1024
+TIMEOUT_PER_URL = 20
+MAX_URLS_TO_FETCH = 20
+MAX_WORKERS = 10
 
 # -------------------- Flask App --------------------
 app = Flask(__name__)
@@ -58,12 +56,10 @@ def get_internal_urls(base_url):
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument("user-agent=Mozilla/5.0")
-
         driver = uc.Chrome(options=options)
         driver.get(base_url)
         soup = BeautifulSoup(driver.page_source, 'lxml')
         driver.quit()
-
         for a in soup.find_all('a', href=True):
             href = urljoin(base_url, a['href']).split('#')[0].rstrip('/')
             if href.startswith(base_url) and validators.url(href):
@@ -72,44 +68,45 @@ def get_internal_urls(base_url):
                     break
         return list(urls) or [base_url]
     except Exception as e:
-        logging.error(f"[CRAWL ERROR] {base_url}: {e}")
+        logging.error(f"[CRAWL ERROR] {base_url}: {e}", exc_info=True)
         return [base_url]
 
 
 def fetch_page_text(url):
+    text = ""
     try:
         chrome_options = Options()
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-
         driver = uc.Chrome(options=chrome_options)
         driver.set_page_load_timeout(TIMEOUT_PER_URL)
         driver.get(url)
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         html = driver.page_source
         driver.quit()
-
         soup = BeautifulSoup(html, 'lxml')
         for tag in soup(['script', 'style', 'noscript']):
             tag.decompose()
         text = soup.get_text(separator=' ', strip=True)
         text = re.sub(r'\s+', ' ', text.lower())
+        if not text.strip():
+            text = "[EMPTY TEXT]"
+    except Exception as e:
+        logging.error(f"[FETCH ERROR] {url}: {e}", exc_info=True)
+        text = f"[FAILED TO LOAD] {str(e)}"
 
-        # Save debug text
-        safe_name = re.sub(r'\W+', '_', url)
-        debug_path = os.path.join(RESULTS_FOLDER, f"debug_{safe_name[:40]}.txt")
+    # Save debug no matter what
+    safe_name = re.sub(r'\W+', '_', url)
+    debug_path = os.path.join(RESULTS_FOLDER, f"debug_{safe_name[:40]}.txt")
+    try:
         with open(debug_path, "w", encoding="utf-8") as f:
             f.write(text)
-
-        return url, text
-
     except Exception as e:
-        logging.error(f"[ERROR] Selenium fetch failed for {url}: {e}", exc_info=True)
-        with open("selenium_error.log", "a", encoding="utf-8") as f:
-            f.write(f"Error fetching {url}:\n{str(e)}\n\n")
-        return url, None
+        logging.error(f"[DEBUG WRITE ERROR] {debug_path}: {e}", exc_info=True)
+
+    return url, text if "[FAILED" not in text else None
 
 
 def match_keywords(keywords, url_texts, match_threshold=0.6):
@@ -136,7 +133,6 @@ def index():
     error = None
     results = []
     download_filename = None
-
     if request.method == 'POST':
         email = request.form.get('email', '')
         website = request.form.get('website', '')
