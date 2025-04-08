@@ -112,22 +112,21 @@ def fetch_page_text(url):
         return url, None
 
 
-def match_keywords(keywords, url_texts):
+def match_keywords(keywords, url_texts, match_threshold=0.6):
     results = []
     for kw in keywords:
         kw_lc = kw.lower()
-        parts = [w for w in re.findall(r'\b\w+\b', kw_lc) if len(w) > 2]
+        parts = [w for w in re.findall(r'\b\w{3,}\b', kw_lc)]
         best = {'keyword': kw, 'found': False, 'url': '-', 'score': 0, 'preview': ''}
         for url, text in url_texts.items():
             if not text:
                 continue
-            score = text.count(kw_lc)
-            for part in parts:
-                score += text.count(part)
-            if score > best['score']:
-                idx = text.find(kw_lc if kw_lc in text else parts[0])
+            found_parts = sum(1 for p in parts if p in text)
+            ratio = found_parts / len(parts) if parts else 0
+            if ratio >= match_threshold:
+                idx = text.find(parts[0]) if parts[0] in text else 0
                 preview = text[max(0, idx - 60):idx + 60]
-                best.update({'found': True, 'url': url, 'score': score, 'preview': f"...{preview}..."})
+                best.update({'found': True, 'url': url, 'score': found_parts, 'preview': f"...{preview}..."})
         results.append(best)
     return results
 
