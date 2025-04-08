@@ -110,11 +110,16 @@ def fetch_page_text(url, session):
         resp.raise_for_status()
         if 'html' not in resp.headers.get('Content-Type', '').lower():
             return url, None
-        soup = BeautifulSoup(resp.content, 'lxml')
+
+        resp.encoding = resp.apparent_encoding
+        soup = BeautifulSoup(resp.text, 'lxml')
+
         for tag in soup(['script', 'style', 'footer', 'nav', 'form', 'head', 'header', 'aside']):
             tag.decompose()
+
         text = soup.get_text(separator=' ', strip=True)
         return url, re.sub(r'\s+', ' ', text.lower())
+
     except Exception as e:
         logging.warning(f"Error fetching {url}: {e}")
         return url, None
@@ -182,7 +187,7 @@ def index():
             error = "آدرس وب‌سایت را وارد کنید."
         elif not file or not allowed_file(file.filename):
             error = "فایل اکسل معتبر انتخاب نشده است."
-        
+
         if error:
             return render_template("index.html", error=error, email=email, website=website), 400
 
