@@ -1,35 +1,35 @@
+
 # -*- coding: utf-8 -*-
 import os
 import re
 import uuid
-import time
 import logging
-import shutil
 import pandas as pd
-from flask import Flask, request, render_template, send_file, abort
+from flask import Flask, render_template, request, send_file
 from werkzeug.utils import secure_filename
+from collections import Counter
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import undetected_chromedriver as uc
+import undetected_chromedriver.v2 as uc
+from selenium.webdriver.chrome.options import Options
 
 # --- Config ---
 UPLOAD_FOLDER = 'instance/uploads'
 RESULTS_FOLDER = 'instance/results'
 DEBUG_FOLDER = RESULTS_FOLDER
 ALLOWED_EXTENSIONS = {'.xlsx'}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-TIMEOUT = 30
+TIMEOUT = 20
 
-# --- App setup ---
+# Ensure folders exist
+for folder in [UPLOAD_FOLDER, RESULTS_FOLDER]:
+    os.makedirs(folder, exist_ok=True)
+
+# --- Flask App ---
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RESULTS_FOLDER'] = RESULTS_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(RESULTS_FOLDER, exist_ok=True)
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 
 logging.basicConfig(
     filename='instance/app.log',
@@ -37,7 +37,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# --- Helpers ---
+# --- Helper Functions ---
 def allowed_file(filename):
     return '.' in filename and os.path.splitext(filename)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -55,10 +55,11 @@ def fetch_page_text(url):
         html = driver.page_source
         text = re.sub(r'<[^>]+>', ' ', html)
         text = re.sub(r'\s+', ' ', text).lower()
-        # Debug: save raw content
-        filename = os.path.join(DEBUG_FOLDER, f'debug_{uuid.uuid4().hex}.txt')
-        with open(filename, 'w', encoding='utf-8') as f:
+
+        debug_file = os.path.join(DEBUG_FOLDER, f'debug_{uuid.uuid4().hex}.txt')
+        with open(debug_file, 'w', encoding='utf-8') as f:
             f.write(text)
+        logging.info(f"[DEBUG] Saved debug content to {debug_file}")
         return text
     except Exception as e:
         logging.error(f"[Selenium] Error fetching {url}: {e}")
@@ -69,63 +70,78 @@ def fetch_page_text(url):
         except:
             pass
 
-def check_keywords(text, keywords):
+def get_keywords_from_file(filepath):
+    df = pd.read_excel(filepath)
+    keywords = df.iloc[:, 0].dropna().astype(str).str.strip().str.lower().tolist()
+    return list(set(keywords))
+
+def filter_stop_words(keywords, text):
+    words = re.findall(r'\b\w{3,}\b', text)
+    common = {w for w, _ in Counter(words).most_common(50)}
+    return [kw for kw in keywords if not any(w in common for w in kw.split())]
+
+def check_keywords(keywords, text, url):
     results = []
     for kw in keywords:
-        base = {'keyword': kw, 'found': False, 'score': 0, 'preview': '', 'url': '-'}
-        if not text:
-            results.append(base)
-            continue
-        kw_parts = [w for w in re.split(r'\s+', kw.lower()) if len(w) > 2]
-        found_word = next((w for w in kw_parts if w in text), None)
-        if found_word:
-            idx = text.find(found_word)
-            preview = text[max(0, idx - 60): idx + len(found_word) + 60]
-            base.update({'found': True, 'score': text.count(found_word), 'preview': f"...{preview}..."})
-        results.append(base)
+        score = text.count(kw)
+        found = score > 0
+        preview = ""
+        if found:
+            idx = text.find(kw)
+            preview = text[max(0, idx - 50):idx + 50]
+        results.append({
+            'keyword': kw,
+            'found': found,
+            'url': url if found else "-",
+            'score': score,
+            'preview': preview
+        })
     return results
 
 # --- Routes ---
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    results = []
-    download_filename = None
-    error = None
+    results, error, download_filename = [], None, None
+    email = request.form.get('email', '').strip()
+    website = request.form.get('website', '').strip()
+
     if request.method == 'POST':
         file = request.files.get('file')
-        url = request.form.get('website', '').strip()
-        if not url.startswith("http"):
-            url = "https://" + url
-        if not file or not allowed_file(file.filename):
-            error = "فایل نامعتبر است."
+        if not email or not website or not file or not allowed_file(file.filename):
+            error = "اطلاعات ناقص یا فایل نامعتبر است."
         else:
             try:
                 filename = secure_filename(file.filename)
-                path = os.path.join(UPLOAD_FOLDER, f"{uuid.uuid4().hex}_{filename}")
-                file.save(path)
-                df = pd.read_excel(path)
-                os.remove(path)
-                keywords = df.iloc[:, 0].dropna().astype(str).str.strip().tolist()
-                page_text = fetch_page_text(url)
-                results = check_keywords(page_text, keywords)
-                df_out = pd.DataFrame(results)
-                output_file = f"results_{uuid.uuid4()}.xlsx"
-                output_path = os.path.join(RESULTS_FOLDER, output_file)
-                df_out.to_excel(output_path, index=False)
-                download_filename = output_file
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                keywords = get_keywords_from_file(filepath)
+
+                text = fetch_page_text(website)
+                if not text:
+                    raise ValueError("محتوایی برای سایت دریافت نشد.")
+
+                filtered_keywords = filter_stop_words(keywords, text)
+                results = check_keywords(filtered_keywords, text, website)
+
+                df = pd.DataFrame(results)
+                output_name = f"results_{uuid.uuid4()}.xlsx"
+                output_path = os.path.join(RESULTS_FOLDER, output_name)
+                df.to_excel(output_path, index=False)
+                download_filename = output_name
             except Exception as e:
-                logging.error(f"Processing error: {e}")
-                error = "خطا در پردازش فایل یا محتوا."
-    return render_template("index.html", results=results, download_filename=download_filename, error=error)
+                logging.error(f"Processing failed: {e}")
+                error = "خطا در پردازش اطلاعات."
+
+    return render_template("index.html", results=results, error=error, download_filename=download_filename, email=email, website=website)
 
 @app.route('/download/<filename>')
 def download(filename):
-    filename = secure_filename(filename)
-    file_path = os.path.join(RESULTS_FOLDER, filename)
-    if not os.path.exists(file_path):
-        abort(404)
-    return send_file(file_path, as_attachment=True)
+    safe_name = secure_filename(filename)
+    path = os.path.join(RESULTS_FOLDER, safe_name)
+    if not os.path.exists(path):
+        return "File not found", 404
+    return send_file(path, as_attachment=True)
 
-# --- Run ---
+# --- Main ---
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)
