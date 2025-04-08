@@ -114,7 +114,7 @@ def fetch_page_text(url, session):
         resp.encoding = resp.apparent_encoding
         soup = BeautifulSoup(resp.text, 'lxml')
 
-        for tag in soup(['script', 'style', 'footer', 'nav', 'form', 'head', 'header', 'aside']):
+        for tag in soup(['script', 'style', 'noscript']):
             tag.decompose()
 
         text = soup.get_text(separator=' ', strip=True)
@@ -155,18 +155,21 @@ def check_keywords(keywords, texts):
     results = []
     for kw in keywords:
         best = {'keyword': kw, 'found': False, 'url': '-', 'score': 0, 'preview': ''}
+        pattern = re.compile(re.escape(kw), re.IGNORECASE)
         for url, text in texts.items():
             if not text:
                 continue
-            count = text.count(kw)
-            if count > best['score']:
-                idx = text.find(kw)
-                best.update({
-                    'found': True,
-                    'url': url,
-                    'score': count,
-                    'preview': f"...{text[max(0, idx-60):idx+60]}..."
-                })
+            matches = list(pattern.finditer(text))
+            if matches:
+                first = matches[0]
+                snippet = text[max(0, first.start()-60):first.end()+60]
+                if len(matches) > best['score']:
+                    best.update({
+                        'found': True,
+                        'url': url,
+                        'score': len(matches),
+                        'preview': f"...{snippet}..."
+                    })
         results.append(best)
     return results
 
