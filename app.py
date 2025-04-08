@@ -142,16 +142,6 @@ def get_internal_urls(base_url):
         logging.warning(f"Crawl failed for {base}: {e}")
     return list(found or [base])
 
-def detect_language(text):
-    if re.search(r'[\u0600-\u06FF]', text):
-        return 'fa_ar'
-    return 'en'
-
-def extract_keywords(text):
-    words = re.findall(r'\b\w{3,}\b', text)
-    common = Counter(words).most_common(50)
-    return {w for w, _ in common}
-
 def check_keywords(keywords, texts):
     results = []
     for kw in keywords:
@@ -199,8 +189,8 @@ def index():
             temp_path = os.path.join(UPLOAD_FOLDER, f"{uuid.uuid4()}{os.path.splitext(safe_name)[1]}")
             file.save(temp_path)
             df = pd.read_excel(temp_path)
-            keywords = df.iloc[:, 0].dropna().astype(str).str.lower().str.strip().unique().tolist()
-            if not keywords:
+            input_phrases = df.iloc[:, 0].dropna().astype(str).str.lower().str.strip().unique().tolist()
+            if not input_phrases:
                 raise ValueError("هیچ کلمه کلیدی معتبری یافت نشد.")
             os.remove(temp_path)
 
@@ -210,17 +200,15 @@ def index():
                 tasks = {exec.submit(fetch_page_text, url): url for url in urls}
                 texts = dict(f.result() for f in as_completed(tasks))
 
-            full_text = ' '.join(t for t in texts.values() if t)
-            stop_words = extract_keywords(full_text)
+            # Generate final keyword list
+            final_keywords = set()
+            for phrase in input_phrases:
+                final_keywords.add(phrase)
+                words = re.findall(r'\b\w{3,}\b', phrase)
+                for word in words:
+                    final_keywords.add(word)
 
-            refined_keywords = set()
-            for kw in keywords:
-                refined_keywords.add(kw)
-                words = re.findall(r'\b\w{3,}\b', kw.lower())
-                for w in words:
-                    if w not in stop_words:
-                        refined_keywords.add(w)
-            keywords = list(refined_keywords)
+            keywords = list(final_keywords)
 
             with ThreadPoolExecutor(max_workers=MAX_WORKERS_CHECK) as exec:
                 futures = [exec.submit(check_keywords, [kw], texts) for kw in keywords]
