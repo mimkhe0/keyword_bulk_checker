@@ -1,143 +1,162 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa">
 <head>
     <meta charset="UTF-8">
-    <title>تحلیلگر عبارات کلیدی</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyword Search Analyzer</title>
     <link href="https://fonts.googleapis.com/css2?family=Vazir&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Vazir', Tahoma, sans-serif;
-            background: #f5f5f5;
-            padding: 30px;
-            direction: rtl;
+            font-family: 'Vazir', sans-serif;
+            background-color: #f4f7fc;
+            margin: 0;
+            padding: 0;
         }
         .container {
-            max-width: 1000px;
-            background: white;
-            margin: auto;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px #ccc;
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+        }
+        h1 {
+            margin: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
         }
         label {
             display: block;
-            margin-top: 15px;
+            font-size: 16px;
+            margin-bottom: 8px;
         }
-        input[type="email"],
-        input[type="url"],
-        input[type="file"] {
+        input[type="text"], input[type="file"], button {
             width: 100%;
             padding: 10px;
-            margin-top: 5px;
+            font-size: 16px;
+            margin-top: 8px;
             border-radius: 5px;
             border: 1px solid #ccc;
         }
+        input[type="file"] {
+            border: none;
+        }
         button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .results-table {
+            width: 100%;
+            margin-top: 40px;
+            border-collapse: collapse;
+        }
+        .results-table th, .results-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        .results-table th {
+            background-color: #f2f2f2;
+        }
+        .preview {
+            background-color: #f8f9fa;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .download-btn {
+            display: block;
+            width: auto;
+            padding: 10px 20px;
             margin-top: 20px;
-            padding: 12px 25px;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
+            text-align: center;
             cursor: pointer;
         }
-        .error {
-            margin-top: 20px;
-            color: red;
-            background-color: #ffeaea;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-        }
-        th, td {
-            padding: 12px;
-            border: 1px solid #ddd;
-        }
-        th {
-            background-color: #eee;
-        }
-        .download-link {
-            display: inline-block;
-            margin-top: 20px;
-            background: green;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            text-decoration: none;
+        .download-btn:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>تحلیلگر عبارات کلیدی</h1>
 
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
+    <div class="container">
+        <header>
+            <h1>Keyword Search Analyzer</h1>
+            <p>Upload your Excel file with keywords and provide the website URL to analyze keyword presence.</p>
+        </header>
 
-    <form method="post" enctype="multipart/form-data" action="/">
-        <label for="email">ایمیل:</label>
-        <input type="email" name="email" id="email" required value="{{ email or '' }}">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="text" id="email" name="email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="website">Website URL</label>
+                <input type="text" id="website" name="website" placeholder="Enter website URL" required>
+            </div>
+            <div class="form-group">
+                <label for="file">Upload Excel File (containing keywords)</label>
+                <input type="file" id="file" name="file" accept=".xlsx" required>
+            </div>
+            <button type="submit">Start Analysis</button>
+        </form>
 
-        <label for="website">آدرس وب‌سایت:</label>
-        <input type="url" name="website" id="website" required value="{{ website or '' }}">
-
-        <label for="file">فایل اکسل (.xlsx):</label>
-        <input type="file" name="file" id="file" accept=".xlsx" required>
-
-        <button type="submit">بررسی عبارات کلیدی</button>
-    </form>
-
-    {% if results %}
-        <h2>نتایج</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>عبارت</th>
-                <th>کلمات مهم</th>
-                <th>کلمات یافت‌شده</th>
-                <th>امتیاز</th>
-                <th>پیش‌نمایش</th>
-                <th>وضعیت</th>
-                <th>یادداشت</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for r in results %}
-                <tr>
-                    <td>{{ r.original_phrase }}</td>
-                    <td>{{ r.important_terms | join(', ') }}</td>
-                    <td>
-                        {% if r.found_terms %}
-                            {% for term, score in r.found_terms.items() %}
-                                {{ term }} ({{ score }}){% if not loop.last %}, {% endif %}
+        {% if results %}
+        <div class="results-section">
+            <h2>Analysis Results</h2>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Original Phrase</th>
+                        <th>Found Terms (Count)</th>
+                        <th>Total Score</th>
+                        <th>Preview</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>{{ result.original_phrase }}</td>
+                        <td>
+                            {% for term, count in result.found_terms.items() %}
+                                <div>{{ term }}: {{ count }}</div>
                             {% endfor %}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>{{ r.total_score }}</td>
-                    <td>{{ r.previews.values() | list | first }}</td>
-                    <td style="color: {{ 'green' if r.found_any else 'gray' }}">
-                        {{ 'یافت شد' if r.found_any else 'یافت نشد' }}
-                    </td>
-                    <td>{{ r.analysis_notes or '-' }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                        <td>{{ result.total_score }}</td>
+                        <td>
+                            {% for term, position in result.previews.items() %}
+                                <div class="preview">
+                                    <strong>{{ term }}</strong>: Found at position {{ position }}
+                                </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
 
-        {% if download_filename %}
-            <a href="{{ url_for('download', filename=download_filename) }}" class="download-link">
-                دانلود فایل اکسل
-            </a>
+            {% if download_filename %}
+            <a href="{{ url_for('download', filename=download_filename) }}" class="download-btn">Download Analysis Report</a>
+            {% endif %}
+        </div>
         {% endif %}
-    {% endif %}
-</div>
+    </div>
+
 </body>
 </html>
