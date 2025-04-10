@@ -1,10 +1,25 @@
-flask==2.3.3
-pandas==2.0.3
-requests==2.31.0
-beautifulsoup4==4.12.2
-lxml==4.9.3
-validators==0.22.0
-werkzeug==2.3.7
-openpyxl==3.1.2
-gunicorn==20.1.0
-selenium
+# Flask Web Framework
+Flask>=2.0
+
+# Selenium for browser automation
+selenium>=4.0
+
+# Automatically manages browser drivers (ChromeDriver)
+webdriver-manager
+
+# Reading .xlsx files
+pandas
+openpyxl
+
+# Validating email addresses
+email-validator>=2.0.0
+
+# Identifying file types (MIME)
+python-magic
+
+# Reading .env files (useful for local development)
+python-dotenv
+
+# Production WSGI Server (choose one or both if needed)
+gunicorn # Recommended for Linux
+# waitress # Alternative, pure Python
