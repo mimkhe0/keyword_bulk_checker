@@ -4,6 +4,8 @@ import re
 import uuid
 import logging
 import magic
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, Alignment
 import datetime # برای context processor
 from typing import List, Dict, Tuple, Optional, Set, Union, cast
 import pandas as pd
@@ -361,7 +363,7 @@ def analyze_phrases_in_text(
 
 
 def generate_excel_report(results: List[Dict], url_checked: str) -> Optional[str]:
-    """Generates an Excel report from results and saves it."""
+    """Generates a formatted Excel report from results and saves it."""
     if not results:
         logging.warning("No results provided to generate report.")
         return None
@@ -369,7 +371,6 @@ def generate_excel_report(results: List[Dict], url_checked: str) -> Optional[str
     report_data = []
     for res in results:
         important_terms_str = ', '.join(res.get('important_terms', [])) if res.get('important_terms') else "-"
-        # تنظیم یادداشت تحلیل بر اساس وضعیت یافت شدن
         analysis_notes = res.get('analysis_notes') if res.get('analysis_notes') else ("یافت شد" if res.get('found_phrase') else "یافت نشد")
         context_snippet = res.get('context_snippet', "-")
 
@@ -384,6 +385,94 @@ def generate_excel_report(results: List[Dict], url_checked: str) -> Optional[str
             'Context Snippet': context_snippet,
             'URL Checked': url_checked
         })
+
+    try:
+        df = pd.DataFrame(report_data)
+        output_name = f"analysis_report_{uuid.uuid4().hex[:8]}.xlsx"
+        output_path = os.path.join(app.config['RESULTS_FOLDER'], output_name)
+        sheet_name = 'Analysis Results' # نام شیت اکسل
+
+        # استفاده از ExcelWriter برای دسترسی به قابلیت‌های openpyxl
+        with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            # گرفتن آبجکت‌های workbook و worksheet
+            workbook = writer.book
+            worksheet = writer.sheets[sheet_name]
+
+            # تعریف استایل‌ها
+            header_font = Font(bold=True)
+            # تنظیم تراز برای متن (چپ و بالا) و اعداد (راست و وسط)
+            text_alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
+            number_alignment = Alignment(horizontal='right', vertical='center')
+
+            # فرمت‌بندی سربرگ و تنظیم عرض ستون‌ها
+            for col_num, column_title in enumerate(df.columns, 1):
+                column_letter = get_column_letter(col_num)
+                cell = worksheet[f"{column_letter}1"] # سلول سربرگ
+
+                # اعمال فونت بولد به سربرگ
+                cell.font = header_font
+
+                # محاسبه عرض ستون بر اساس طولانی‌ترین مقدار یا سربرگ
+                max_length = 0
+                # در نظر گرفتن طول سربرگ
+                column_width_title = len(str(column_title))
+                max_length = max(max_length, column_width_title)
+
+                # پیدا کردن طولانی‌ترین مقدار در ستون (با یک محدودیت برای سرعت)
+                for i, cell_value in enumerate(df[column_title]):
+                     # بررسی فقط ۱۰۰۰ ردیف اول برای سرعت
+                     if i > 1000: break
+                     cell_len = len(str(cell_value))
+                     if cell_len > max_length:
+                         max_length = cell_len
+
+                # تنظیم عرض ستون (با کمی اضافه و محدودیت حداکثر/حداقل)
+                # عرض تقریبی بر اساس تعداد کاراکتر
+                adjusted_width = min(max(max_length + 2, column_width_title + 2), 60) # حداقل عرض بر اساس سربرگ، حداکثر 60
+
+                # ستون‌های خاص که نیاز به عرض بیشتر یا کمتر دارند
+                if column_title == 'Context Snippet':
+                    adjusted_width = 50 # عرض بیشتر برای کانتکست
+                    wrap_text_cols = True
+                elif column_title == 'Times Found' or column_title == 'Score (Phrase Count)':
+                    adjusted_width = 15 # عرض کمتر برای اعداد
+                    wrap_text_cols = False
+                elif column_title == 'Phrase Found?':
+                     adjusted_width = 15
+                     wrap_text_cols = False
+                else:
+                     wrap_text_cols = True # بقیه ستون‌ها متن طولانی‌تری دارند
+
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+
+                # اعمال تراز بندی و شکستن متن به سلول‌های داده (غیر از سربرگ)
+                for row_num in range(2, worksheet.max_row + 1):
+                    data_cell = worksheet[f"{column_letter}{row_num}"]
+                    if column_title in ['Times Found', 'Score (Phrase Count)']:
+                        data_cell.alignment = number_alignment
+                    else:
+                        # فعال کردن Wrap Text فقط برای ستون‌های مشخص شده
+                        if wrap_text_cols:
+                             data_cell.alignment = text_alignment
+                        else:
+                             # اگر wrap text نخواهیم، فقط تراز افقی چپ و عمودی وسط
+                             data_cell.alignment = Alignment(horizontal='left', vertical='center')
+
+
+            # ثابت کردن ردیف اول (Freeze Header Row)
+            worksheet.freeze_panes = 'A2'
+
+        logging.info(f"Generated formatted Excel report: {output_path} for URL: {url_checked}")
+        return output_name
+
+    except ImportError:
+         logging.error("Cannot write Excel file. 'openpyxl' engine not installed? Run: pip install openpyxl")
+         raise RuntimeError("خطا: وابستگی 'openpyxl' برای نوشتن فایل اکسل نصب نشده است.")
+    except Exception as e:
+        logging.error(f"Failed to generate formatted Excel report {output_path}: {e}", exc_info=True)
+        raise RuntimeError(f"خطا در تولید فایل گزارش اکسل فرمت‌بندی شده: {e}") from e
 
     try:
         df = pd.DataFrame(report_data)
